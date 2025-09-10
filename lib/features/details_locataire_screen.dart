@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mbaaza_pay/features/edition_locataire_screen.dart';
+import 'package:mbaaza_pay/features/historique_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/constants/colors.dart';
@@ -29,7 +31,6 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -41,11 +42,21 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
                 children: [
                   _buildProfileHeader(),
                   const SizedBox(height: 32),
-                  _buildContactInfo(),
-                  const SizedBox(height: 1),
-                  _buildLocationInfo(),
-                  const SizedBox(height: 1),
-                  _buildRentInfo(),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16)
+                    ),
+                    child: Column(
+                      children: [
+                        _buildContactInfo(),
+                        Divider(height: 10, color: Colors.grey.shade100,),
+                        _buildLocationInfo(),
+                        Divider(height: 10, color: Colors.grey.shade100,),
+                        _buildRentInfo(),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 32),
                   _buildHistoryButton(),
                 ],
@@ -60,12 +71,11 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(
           Icons.arrow_back_ios_new,
-          color: Color(0xFF374151),
           size: 20,
         ),
         style: IconButton.styleFrom(
@@ -75,15 +85,6 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
         ),
         onPressed: () => Navigator.of(context).pop(),
       ),
-      title: Text(
-        'Détails',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: AppColors.blackSoft,
-        ),
-      ),
-      centerTitle: true,
     );
   }
 
@@ -94,10 +95,10 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
         // Nom du locataire
         Text(
           widget.locataire['nom'] ?? 'Nom inconnu',
-          style: TextStyle(
+          style: GoogleFonts.figtree(
             fontSize: 32,
-            fontWeight: FontWeight.bold,
             color: AppColors.blackSoft,
+            fontWeight: FontWeight.w600,
             letterSpacing: -0.5,
           ),
         ),
@@ -213,17 +214,6 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF000000).withAlpha(5),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Row(
         children: [
           Container(
@@ -277,7 +267,9 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _showPaymentHistory,
+        onPressed: () {
+          Navigator.of(context).push(MaterialPageRoute(builder: (context) => HistoriqueScreen()));
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
@@ -301,9 +293,6 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
   Widget _buildBottomActions() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-      ),
       child: Row(
         children: [
           Expanded(
@@ -365,10 +354,10 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.figtree(
               fontSize: 12,
-              fontWeight: FontWeight.w600,
               color: color,
+              fontWeight: FontWeight.w600
             ),
           ),
         ],
@@ -399,26 +388,6 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
         _showErrorSnackBar('Impossible d\'envoyer le SMS');
       }
     }
-  }
-
-  void _showPaymentHistory() {
-    // Navigation vers l'historique des paiements
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text('Historique des paiements'),
-        content: const Text('Cette fonctionnalité sera bientôt disponible.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _toggleBlockStatus() async {

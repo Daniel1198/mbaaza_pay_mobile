@@ -16,7 +16,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mbaaza Pay',
         theme: ThemeData(
-          textTheme: GoogleFonts.outfitTextTheme(),
+          scaffoldBackgroundColor: Color(0xFFF1F1F3),
+          fontFamily: GoogleFonts.figtree().fontFamily,
           colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
         ),
       debugShowCheckedModeBanner: false,

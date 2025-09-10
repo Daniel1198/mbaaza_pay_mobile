@@ -1,33 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mbaaza_pay/core/constants/colors.dart';
-import 'package:mbaaza_pay/features/details_locataire_screen.dart';
-import 'package:mbaaza_pay/features/edition_locataire_screen.dart';
+import 'package:mbaaza_pay/features/details_paiement_screen.dart';
 
-class LocatairesScreen extends StatefulWidget {
-  const LocatairesScreen({super.key});
+import '../core/constants/colors.dart';
+import 'edition_locataire_screen.dart';
+
+class HistoriqueScreen extends StatefulWidget {
+  const HistoriqueScreen({super.key});
 
   @override
-  State<LocatairesScreen> createState() => _LocatairesScreenState();
+  State<HistoriqueScreen> createState() => _HistoriqueScreenState();
 }
 
-class _LocatairesScreenState extends State<LocatairesScreen> {
+class _HistoriqueScreenState extends State<HistoriqueScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
   // Liste des locataires (vous pouvez remplacer par vos données)
   final List<Map<String, String>> _allLocataires = [
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
+    {'name': 'Aly Stéphane', 'date': '13 Janvier 2025', 'montant': '20 000', 'section': 'Janvier'},
+    {'name': 'Aly Stéphane', 'date': '14 Janvier 2025', 'montant': '20 000', 'section': 'Janvier'},
+    {'name': 'Aly Stéphane', 'date': '15 Janvier 2025', 'montant': '20 000', 'section': 'Janvier'},
+    {'name': 'Aly Stéphane', 'date': '16 Janvier 2025', 'montant': '20 000', 'section': 'Janvier'},
+    {'name': 'Aly Stéphane', 'date': '17 Janvier 2025', 'montant': '20 000', 'section': 'Janvier'},
+    {'name': 'Aly Stéphane', 'date': '22 Janvier 2025', 'montant': '20 000', 'section': 'Janvier'},
+    {'name': 'Cly Stéphane', 'date': '05 Février 2025', 'montant': '20 000', 'section': 'Février'},
+    {'name': 'Cly Stéphane', 'date': '13 Février 2025', 'montant': '20 000', 'section': 'Février'},
+    {'name': 'Cly Stéphane', 'date': '16 Février 2025', 'montant': '20 000', 'section': 'Février'},
+    {'name': 'Cly Stéphane', 'date': '22 Février 2025', 'montant': '20 000', 'section': 'Février'},
+    {'name': 'Cly Stéphane', 'date': '28 Février 2025', 'montant': '20 000', 'section': 'Février'},
   ];
 
   List<Map<String, String>> get _filteredLocataires {
@@ -111,7 +112,7 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: const Text(
-        'Mes locataires',
+        'Paiements',
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -144,21 +145,23 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
       margin: EdgeInsets.zero,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 5),
-        decoration: BoxDecoration(
-          color: Colors.white,
-        ),
+        decoration: BoxDecoration(color: Colors.white),
         child: TextField(
           controller: _searchController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Recherche',
-            hintStyle: TextStyle(
+            hintStyle: const TextStyle(
               color: Color(0xFF9CA3AF),
               fontSize: 16,
               fontWeight: FontWeight.w400,
             ),
-            prefixIcon: Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
+            prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            suffixIcon: IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.filter_alt_outlined, size: 20, color: AppColors.primary,),
+            ),
           ),
           style: const TextStyle(fontSize: 16, color: Color(0xFF1A1A1A)),
         ),
@@ -184,11 +187,7 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
           children: [
             // Section Header
             Padding(
-              padding: EdgeInsets.only(
-                left: 33,
-                bottom: 12,
-                top: 10,
-              ),
+              padding: EdgeInsets.only(left: 33, bottom: 12, top: 10),
               child: Text(
                 section,
                 style: TextStyle(
@@ -205,8 +204,10 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
               itemCount: locataires.length,
-                itemBuilder: (context, index) => _buildLocataireItem(locataires[index]),
-                separatorBuilder: (context, index) => Divider(height: 0, color: Colors.grey.shade100,),
+              itemBuilder: (context, index) =>
+                  _buildLocataireItem(locataires[index]),
+              separatorBuilder: (context, index) =>
+                  Divider(height: 0, color: Colors.grey.shade100),
             ),
           ],
         );
@@ -216,28 +217,37 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
 
   Widget _buildLocataireItem(Map<String, String> locataire) {
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 2),
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => DetailsLocataireScreen(locataire: locataire),
+            builder: (context) => DetailsPaiementScreen(paiement: locataire),
           ),
         );
       },
       tileColor: Colors.white,
-      title: Text(
+      subtitle: Text(
         locataire['name']!,
+        style: GoogleFonts.figtree(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: AppColors.grey,
+        ),
+      ),
+      title: Text(
+        locataire['date']!,
         style: GoogleFonts.figtree(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF1A1A1A),
+          color: AppColors.blackSoft,
         ),
       ),
-      leading: CircleAvatar(
-        backgroundColor: AppColors.primary,
-        child: Text(
-          locataire['name']!.substring(0, 1),
-          style: TextStyle(color: Colors.white),
+      trailing: Text(
+        locataire['montant']!,
+        style: GoogleFonts.figtree(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: AppColors.primary,
         ),
       ),
     );

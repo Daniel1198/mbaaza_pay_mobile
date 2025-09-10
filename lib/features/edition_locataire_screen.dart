@@ -55,7 +55,6 @@ class _EditionLocataireScreenState extends State<EditionLocataireScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       appBar: _buildAppBar(),
       body: Form(
         key: _formKey,
@@ -89,12 +88,12 @@ class _EditionLocataireScreenState extends State<EditionLocataireScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.primary,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(
           Icons.arrow_back_ios_new,
-          color: Color(0xFF374151),
+          color: Colors.white,
           size: 20,
         ),
         style: IconButton.styleFrom(
@@ -109,7 +108,7 @@ class _EditionLocataireScreenState extends State<EditionLocataireScreen> {
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: AppColors.blackSoft,
+          color: AppColors.white,
         ),
       ),
       centerTitle: true,
@@ -119,10 +118,10 @@ class _EditionLocataireScreenState extends State<EditionLocataireScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w500,
-        color: Color(0xFF9CA3AF),
+        color: AppColors.primary,
         letterSpacing: 0.5,
       ),
     );
