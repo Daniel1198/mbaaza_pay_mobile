@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mbaaza_pay/features/activites_recentes_screen.dart';
 import 'package:mbaaza_pay/features/historique_screen.dart';
 import 'package:mbaaza_pay/features/locataires_screen.dart';
+import 'package:mbaaza_pay/features/quittance_screen.dart';
 
 import '../core/constants/colors.dart';
 
@@ -141,12 +144,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: () {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (context) => HistoriqueScreen(),
+                                      builder: (context) => QuittanceScreen(),
                                     ),
                                   );
                                 },
                                 icon: Icon(
-                                  Icons.qr_code,
+                                  Icons.checklist,
                                   color: AppColors.primary,
                                   size: 32,
                                 ),
@@ -161,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               SizedBox(height: 5),
                               Text(
-                                'QR code',
+                                'Suivi loyers',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
@@ -307,7 +310,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           IconButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (context) => ActivitesRecentesScreen())
+                                );
+                              },
                               icon: Icon(Icons.arrow_right_alt),
                             style: IconButton.styleFrom(
                               backgroundColor: Colors.grey.shade100,
@@ -349,16 +356,12 @@ Widget _buildActivityItem(
     String title, String subtitle, String trailing, IconData icon, Color color) {
   return Row(
     children: [
-      Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withAlpha(20),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          icon,
-          color: color,
-          size: 20,
+      Text(
+        "10:35",
+        style: GoogleFonts.figtree(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: AppColors.greyDark,
         ),
       ),
       const SizedBox(width: 12),
@@ -376,7 +379,7 @@ Widget _buildActivityItem(
             ),
             const SizedBox(height: 2),
             Text(
-              subtitle,
+              "de : $subtitle",
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF6B7280),

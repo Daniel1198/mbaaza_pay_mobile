@@ -120,22 +120,6 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
         ),
       ),
       centerTitle: true,
-      actionsPadding: EdgeInsets.only(right: 10),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.add, color: AppColors.white, size: 20),
-          style: IconButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => EditionLocataireScreen()),
-            );
-          },
-        ),
-      ],
     );
   }
 
@@ -243,10 +227,10 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
         ),
       ),
       trailing: Text(
-        locataire['montant']!,
+        "${locataire['montant']!} XOF",
         style: GoogleFonts.figtree(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
           color: AppColors.primary,
         ),
       ),

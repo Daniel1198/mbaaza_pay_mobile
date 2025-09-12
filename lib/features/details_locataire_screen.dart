@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mbaaza_pay/features/edition_locataire_screen.dart';
 import 'package:mbaaza_pay/features/historique_screen.dart';
+import 'package:mbaaza_pay/features/quittance_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/constants/colors.dart';
@@ -58,7 +59,7 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  _buildHistoryButton(),
+                  _buildValidationButton(),
                 ],
               ),
             ),
@@ -263,12 +264,16 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
     );
   }
 
-  Widget _buildHistoryButton() {
+  Widget _buildValidationButton() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
-          Navigator.of(context).push(MaterialPageRoute(builder: (context) => HistoriqueScreen()));
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => QuittanceScreen(),
+            ),
+          );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -280,7 +285,7 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
           elevation: 0
         ),
         child: const Text(
-          'Historique des paiements',
+          'Valider la quittance',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -297,8 +302,8 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
         children: [
           Expanded(
             child: _buildBottomActionButton(
-              icon: _isBlocked ? Icons.lock_open_outlined : Icons.block_outlined,
-              label: _isBlocked ? 'Débloquer' : 'Bloquer',
+              icon: _isBlocked ? Icons.unarchive : Icons.archive,
+              label: _isBlocked ? 'Désarchiver' : 'Archiver',
               color: AppColors.blackSoft,
               onTap: _toggleBlockStatus,
             ),
@@ -308,7 +313,7 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
 
           Expanded(
             child: _buildBottomActionButton(
-              icon: Icons.edit_outlined,
+              icon: Icons.edit,
               label: 'Modifier',
               color: AppColors.blackSoft,
               onTap: _editLocataire,
@@ -319,10 +324,12 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
 
           Expanded(
             child: _buildBottomActionButton(
-              icon: Icons.delete_outline,
-              label: 'Supprimer',
+              icon: Icons.receipt_long,
+              label: 'Paiements',
               color: AppColors.blackSoft,
-              onTap: _deleteLocataire,
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => HistoriqueScreen()));
+              },
             ),
           ),
         ],
@@ -420,73 +427,6 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
   void _editLocataire() {
     // Navigation vers la page d'édition
     Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditionLocataireScreen()));
-  }
-
-  void _deleteLocataire() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Supprimer le locataire',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Text(
-          'Êtes-vous sûr de vouloir supprimer ${widget.locataire['nom']} ? Cette action est irréversible.',
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Annuler',
-              style: TextStyle(color: Color(0xFF6B7280)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _confirmDelete,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _confirmDelete() async {
-    Navigator.of(context).pop(); // Fermer le dialog
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Simuler une requête réseau
-      await Future.delayed(const Duration(seconds: 1));
-
-      _showSuccessSnackBar('Locataire supprimé avec succès');
-
-      // Retourner à la page précédente après un délai
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          Navigator.of(context).pop(true); // true indique que le locataire a été supprimé
-        }
-      });
-    } catch (e) {
-      _showErrorSnackBar('Erreur lors de la suppression');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
   void _showSuccessSnackBar(String message) {
