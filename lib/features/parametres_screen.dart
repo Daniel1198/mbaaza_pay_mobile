@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mbaaza_pay/features/change_password_screen.dart';
 import 'package:mbaaza_pay/features/edit_owner_profile_screen.dart';
 import 'package:mbaaza_pay/features/subscription_pricing_screen.dart';
 
@@ -81,7 +82,11 @@ class _ParametresScreenState extends State<ParametresScreen> {
           ),
           SizedBox(height: 10),
           ListTile(
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (builder) => ChangePasswordScreen())
+              );
+            },
             tileColor: Colors.white,
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)
