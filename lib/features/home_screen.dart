@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mbaaza_pay/features/activites_recentes_screen.dart';
 import 'package:mbaaza_pay/features/historique_screen.dart';
 import 'package:mbaaza_pay/features/locataires_screen.dart';
+import 'package:mbaaza_pay/features/parametres_screen.dart';
 import 'package:mbaaza_pay/features/quittance_screen.dart';
 
 import '../core/constants/colors.dart';
@@ -30,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.primary,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: _buildHeader(),
+        title: _buildHeader(context),
         titleSpacing: 20,
         toolbarHeight: 80,
         elevation: 0,
@@ -175,13 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Column(
                             children: [
                               IconButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => LocatairesScreen(),
-                                    ),
-                                  );
-                                },
+                                onPressed: () {},
                                 icon: Icon(
                                   Icons.headset_mic_rounded,
                                   color: AppColors.primary,
@@ -401,7 +396,7 @@ Widget _buildActivityItem(
 }
 
 
-Widget _buildHeader() {
+Widget _buildHeader(BuildContext context) {
   return Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
@@ -437,7 +432,11 @@ Widget _buildHeader() {
         ],
       ),
       IconButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (builder) => ParametresScreen())
+          );
+        },
         icon: Icon(
           Icons.settings_outlined,
           color: AppColors.blackSoft,

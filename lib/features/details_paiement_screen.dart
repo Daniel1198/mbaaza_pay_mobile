@@ -204,28 +204,6 @@ class _DetailsPaiementScreenState extends State<DetailsPaiementScreen> {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return MaterialButton(
-      onPressed: onTap,
-      padding: EdgeInsets.zero,
-      minWidth: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: color.withAlpha(25),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: color, size: 20),
-      ),
-    );
-  }
-
   Widget _buildBottomActions() {
     return Container(
       padding: const EdgeInsets.all(20),

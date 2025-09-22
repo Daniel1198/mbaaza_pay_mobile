@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mbaaza_pay/features/details_paiement_screen.dart';
 
 import '../core/constants/colors.dart';
-import 'edition_locataire_screen.dart';
 
 class HistoriqueScreen extends StatefulWidget {
   const HistoriqueScreen({super.key});
@@ -142,9 +141,22 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
             prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 16),
-            suffixIcon: IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.filter_alt_outlined, size: 20, color: AppColors.primary,),
+            suffixIcon: TextButton(
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 0),
+              ),
+              onPressed: () {
+                showModalBottomSheet(
+                  backgroundColor: Colors.white,
+                  useSafeArea: true,
+                  context: context,
+                  builder: (builder) => _buildYearSelection(),
+                );
+              },
+              child: Text('2023', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
             ),
           ),
           style: const TextStyle(fontSize: 16, color: Color(0xFF1A1A1A)),
@@ -272,6 +284,54 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
           const Text(
             'Essayez de modifier votre recherche',
             style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildYearSelection() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              "Sélectionner l'année",
+              style: TextStyle(
+                color: AppColors.greyDark,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Container(
+            constraints: BoxConstraints(maxHeight: 200),
+            child: GridView.builder(
+              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+              itemCount: 12,
+              itemBuilder: (itemBuilder, index) {
+                return MaterialButton(
+                  onPressed: () {},
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                  color: Colors.grey.shade100,
+                  child: Text(
+                    '2025',
+                    style: GoogleFonts.figtree(fontWeight: FontWeight.w600),
+                  ),
+                );
+              },
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                childAspectRatio: 1.5,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+            ),
           ),
         ],
       ),
