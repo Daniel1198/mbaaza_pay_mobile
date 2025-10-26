@@ -4,6 +4,7 @@ import 'package:mbaaza_pay/core/constants/colors.dart';
 import 'package:mbaaza_pay/features/splash_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 

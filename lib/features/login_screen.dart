@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mbaaza_pay/features/home_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/constants/colors.dart';
+import '../data/services/auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,16 +15,15 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
+  final _auth = Auth();
 
   // Controllers
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _telephoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Pré-remplir pour les tests
-    _emailController.text = 'demo@mbaazapay.com';
   }
 
   @override
@@ -114,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           // Champ email
           const Text(
-            'Adresse email',
+            'Téléphone',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -123,22 +124,22 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 8),
           TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
+            controller: _telephoneController,
+            keyboardType: TextInputType.phone,
             validator: (value) {
               if (value?.isEmpty ?? true) {
-                return 'Veuillez saisir votre email';
+                return 'Veuillez saisir votre numéro de téléphone';
               }
-              if (!value!.contains('@')) {
-                return 'Email invalide';
+              if (value?.length != 10) {
+                return 'Numéro de téléphone invalide';
               }
               return null;
             },
             decoration: InputDecoration(
-              hintText: 'votre.email@exemple.com',
+              hintText: '0102030405',
               hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
               prefixIcon: Icon(
-                Icons.email_outlined,
+                Icons.phone_outlined,
                 color: AppColors.primary,
                 size: 20,
               ),
@@ -181,9 +182,6 @@ class _LoginScreenState extends State<LoginScreen> {
             validator: (value) {
               if (value?.isEmpty ?? true) {
                 return 'Veuillez saisir votre mot de passe';
-              }
-              if (value!.length < 6) {
-                return 'Mot de passe trop court';
               }
               return null;
             },
@@ -316,7 +314,12 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: MaterialButton(
-        onPressed: () {},
+        onPressed: () async {
+          final Uri url = Uri.parse('http://192.168.1.11:4200');
+          if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+            throw Exception('Impossible d\'ouvrir le lien $url');
+          }
+        },
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 0,
         child: Text(
@@ -334,23 +337,15 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
-
-      // Simuler la connexion
-      await Future.delayed(const Duration(seconds: 2));
-
+      final response = await _auth.login(_telephoneController.text, _passwordController.text);
       setState(() => _isLoading = false);
 
-      // Vérifier les identifiants (simulation)
-      if (_emailController.text == 'demo@mbaazapay.com' &&
-          _passwordController.text == 'password123') {
-        // Succès - Naviguer vers l'accueil
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-        );
+      if (response['status'] == 200) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (builder) => HomeScreen()));
       } else {
-        // Erreur
-        _showErrorDialog();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['message']), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),),
+        );
       }
     }
   }
@@ -492,63 +487,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _showErrorDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.withAlpha(25),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: const Icon(
-                Icons.error_rounded,
-                color: Colors.red,
-                size: 40,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Erreur de connexion',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Email ou mot de passe incorrect.\nVeuillez réessayer.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Réessayer',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   void dispose() {
-    _emailController.dispose();
+    _telephoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
