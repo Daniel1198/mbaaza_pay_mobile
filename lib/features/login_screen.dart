@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mbaaza_pay/features/home_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/constants/colors.dart';
-import '../data/services/auth.dart';
+import '../data/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -340,11 +340,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await _auth.login(_telephoneController.text, _passwordController.text);
       setState(() => _isLoading = false);
 
-      if (response['status'] == 200) {
+      if (response.success) {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (builder) => HomeScreen()));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response['message']), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),),
+          SnackBar(content: Text(response.message), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),),
         );
       }
     }

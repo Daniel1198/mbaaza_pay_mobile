@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mbaaza_pay/features/change_password_screen.dart';
 import 'package:mbaaza_pay/features/edit_owner_profile_screen.dart';
+import 'package:mbaaza_pay/features/login_screen.dart';
 import 'package:mbaaza_pay/features/subscription_pricing_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/constants/colors.dart';
+import '../data/services/auth_service.dart';
 
 class ParametresScreen extends StatefulWidget {
   const ParametresScreen({super.key});
@@ -14,6 +17,8 @@ class ParametresScreen extends StatefulWidget {
 }
 
 class _ParametresScreenState extends State<ParametresScreen> {
+  final Auth _auth = Auth();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +77,9 @@ class _ParametresScreenState extends State<ParametresScreen> {
           ),
           Divider(height: 0, thickness: 0, indent: 55,),
           ListTile(
-            onTap: () {},
+            onTap: () {
+              _sendWhatsApp(context);
+            },
             tileColor: Colors.white,
             leading: Icon(Icons.headset_mic_outlined),
             title: Text('Contacter le service client', style: GoogleFonts.figtree(fontWeight: FontWeight.w500, color: AppColors.blackSoft),),
@@ -188,8 +195,28 @@ class _ParametresScreenState extends State<ParametresScreen> {
                         borderRadius: BorderRadius.circular(12)
                       ),
                       child: MaterialButton(
-                        onPressed: () {
-                          Navigator.pop(context);
+                        onPressed: () async {
+                          try {
+                            await _auth.logout();
+
+                            // Redirection vers la page de login
+                            if (!mounted) return;
+                            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (builder) => LoginScreen()), (route) => false);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Vous êtes déconnecté.'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Erreur : $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         },
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -210,7 +237,25 @@ class _ParametresScreenState extends State<ParametresScreen> {
             ],
           ),
         ),
-      ),
+      )
     );
+  }
+
+  void _sendWhatsApp(context) async {
+    const telephone = "22579706401";
+
+    final url = Uri.parse(
+      "https://wa.me/$telephone",
+    );
+
+    if (await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ouverture de WhatsApp.")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("WhatsApp n'est pas installé.")),
+      );
+    }
   }
 }

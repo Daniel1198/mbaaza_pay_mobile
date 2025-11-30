@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mbaaza_pay/core/constants/colors.dart';
+import 'package:mbaaza_pay/data/models/api_response.dart';
+import 'package:mbaaza_pay/data/models/locataire.dart';
+import '../data/services/auth_service.dart';
+import '../data/services/locataire_service.dart';
 
 class EditionLocataireScreen extends StatefulWidget {
-  final Map<String, String>? locataire; // null pour ajouter, données pour éditer
+  final Locataire? locataire;
 
-  const EditionLocataireScreen({
-    super.key,
-    this.locataire,
-  });
+  const EditionLocataireScreen({super.key, this.locataire});
 
   @override
   State<EditionLocataireScreen> createState() => _EditionLocataireScreenState();
@@ -16,29 +16,30 @@ class EditionLocataireScreen extends StatefulWidget {
 
 class _EditionLocataireScreenState extends State<EditionLocataireScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _locataireService = LocataireService();
+  final Auth _authService = Auth();
 
-  // Controllers pour les champs
   final TextEditingController _nomController = TextEditingController();
   final TextEditingController _telephoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _adresseController = TextEditingController();
   final TextEditingController _montantController = TextEditingController();
+  final TextEditingController _dateEcheanceController = TextEditingController();
 
   bool _isLoading = false;
-
   bool get _isEditing => widget.locataire != null;
+  String? bailleurId;
 
   @override
   void initState() {
     super.initState();
-
-    // Pré-remplir les champs si on édite un locataire existant
     if (_isEditing) {
-      _nomController.text = widget.locataire!['nom'] ?? '';
-      _telephoneController.text = widget.locataire!['telephone'] ?? '';
-      _emailController.text = widget.locataire!['email'] ?? '';
-      _adresseController.text = widget.locataire!['adresse'] ?? '';
-      _montantController.text = widget.locataire!['montant'] ?? '';
+      _nomController.text = widget.locataire?.nomComplet ?? '';
+      _telephoneController.text = widget.locataire?.telephone ?? '';
+      _emailController.text = widget.locataire?.email ?? '';
+      _adresseController.text = widget.locataire?.adresseLogement ?? '';
+      _montantController.text = widget.locataire?.montantLoyer.toString() ?? '';
+      _dateEcheanceController.text = widget.locataire?.dateEcheance.toString() ?? '';
     }
   }
 
@@ -49,400 +50,65 @@ class _EditionLocataireScreenState extends State<EditionLocataireScreen> {
     _emailController.dispose();
     _adresseController.dispose();
     _montantController.dispose();
+    _dateEcheanceController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(),
-      body: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('Informations personnelles'),
-                    const SizedBox(height: 16),
-                    _buildPersonalInfoFields(),
+  Future _saveLocataire() async {
+    if (!_formKey.currentState!.validate()) return;
 
-                    const SizedBox(height: 32),
-
-                    _buildSectionTitle('Informations sur le logement'),
-                    const SizedBox(height: 16),
-                    _buildLogementInfoFields(),
-                  ],
-                ),
-              ),
-            ),
-            _buildBottomButtons(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: AppColors.primary,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back_ios_new,
-          color: Colors.white,
-          size: 20,
-        ),
-        style: IconButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12)
-          )
-        ),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      title: Text(
-        _isEditing ? 'Éditer le locataire' : 'Ajouter un locataire',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: AppColors.white,
-        ),
-      ),
-      centerTitle: true,
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: AppColors.primary,
-        letterSpacing: 0.5,
-      ),
-    );
-  }
-
-  Widget _buildPersonalInfoFields() {
-    return Column(
-      children: [
-        _buildFormField(
-          controller: _nomController,
-          icon: Icons.person_outline,
-          label: 'Nom complet',
-          placeholder: 'Cliquez ici pour saisir',
-          color: AppColors.primary,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Le nom est requis';
-            }
-            return null;
-          },
-        ),
-
-        const SizedBox(height: 16),
-
-        _buildFormField(
-          controller: _telephoneController,
-          icon: Icons.phone_outlined,
-          label: 'Téléphone',
-          placeholder: 'Cliquez ici pour saisir',
-          color: AppColors.secondary,
-          keyboardType: TextInputType.phone,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(10),
-          ],
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Le téléphone est requis';
-            }
-            if (value.length < 8) {
-              return 'Numéro de téléphone invalide';
-            }
-            return null;
-          },
-        ),
-
-        const SizedBox(height: 16),
-
-        _buildFormField(
-          color: Colors.purple,
-          controller: _emailController,
-          icon: Icons.email_outlined,
-          label: 'E-mail',
-          placeholder: 'Cliquez ici pour saisir',
-          keyboardType: TextInputType.emailAddress,
-          validator: (value) {
-            if (value != null && value.isNotEmpty) {
-              final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-              if (!emailRegex.hasMatch(value)) {
-                return 'Email invalide';
-              }
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLogementInfoFields() {
-    return Column(
-      children: [
-        _buildFormField(
-          color: Colors.yellow,
-          controller: _adresseController,
-          icon: Icons.location_on_outlined,
-          label: 'Adresse exacte du logement',
-          placeholder: 'Cliquez ici pour saisir',
-          maxLines: 2,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'L\'adresse est requise';
-            }
-            return null;
-          },
-        ),
-
-        const SizedBox(height: 16),
-
-        _buildFormField(
-          color: Colors.green,
-          controller: _montantController,
-          icon: Icons.monetization_on_outlined,
-          label: 'Montant du loyer',
-          placeholder: 'Cliquez ici pour saisir',
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-          ],
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Le montant est requis';
-            }
-            final amount = int.tryParse(value);
-            if (amount == null || amount <= 0) {
-              return 'Montant invalide';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFormField({
-    required TextEditingController controller,
-    required IconData icon,
-    required String label,
-    required String placeholder,
-    required Color color,
-    TextInputType? keyboardType,
-    List<TextInputFormatter>? inputFormatters,
-    String? Function(String?)? validator,
-    int maxLines = 1,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF000000).withAlpha(5),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: color.withAlpha(25),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 16,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blackSoft,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            TextFormField(
-              controller: controller,
-              keyboardType: keyboardType,
-              inputFormatters: inputFormatters,
-              maxLines: maxLines,
-              validator: validator,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Color(0xFF1A1A1A),
-                fontWeight: FontWeight.w500,
-              ),
-              decoration: InputDecoration(
-                hintText: placeholder,
-                hintStyle: const TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomButtons() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFFE5E7EB),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(
-                  color: Color(0xFFE5E7EB),
-                  width: 1,
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Annuler',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280),
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 16),
-
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _saveLocataire,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-                  : Text(
-                _isEditing ? 'Modifier' : 'Enregistrer',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _saveLocataire() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Simuler une requête réseau
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Créer l'objet locataire
       final locataireData = {
-        'nom': _nomController.text.trim(),
+        'nomComplet': _nomController.text.trim(),
         'telephone': _telephoneController.text.trim(),
         'email': _emailController.text.trim(),
-        'adresse': _adresseController.text.trim(),
-        'montant': _montantController.text.trim(),
+        'adresseLogement': _adresseController.text.trim(),
+        'montantLoyer': _montantController.text.trim(),
+        'dateEcheance': _dateEcheanceController.text.trim()
       };
 
-      if (mounted) {
-        // Afficher un message de succès
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditing
-                  ? 'Locataire modifié avec succès!'
-                  : 'Locataire ajouté avec succès!',
-            ),
-            backgroundColor: const Color(0xFF10B981),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
+      ApiResponse? response;
+      if (_isEditing) {
+        final id = widget.locataire?.id;
+        response = await _locataireService.updateLocataire(id!, locataireData);
+      } else {
+        response = await _locataireService.createLocataire(locataireData);
+      }
 
-        // Retourner à la page précédente avec les données
-        Navigator.of(context).pop(locataireData);
+      if (mounted) {
+        if (response.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message),
+              backgroundColor: const Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
+            content: Text('Erreur : ${e.toString()}'),
             backgroundColor: const Color(0xFFEF4444),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -452,11 +118,198 @@ class _EditionLocataireScreenState extends State<EditionLocataireScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          _isEditing ? 'Modifier le locataire' : 'Nouveau locataire',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Informations personnelles',
+                style:
+                TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+
+              _buildFormField(
+                color: Colors.blue,
+                controller: _nomController,
+                icon: Icons.person_outline,
+                label: 'Nom complet',
+                placeholder: 'Entrez le nom du locataire',
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Le nom est requis'
+                    : null,
+              ),
+
+              _buildFormField(
+                color: Colors.green,
+                controller: _telephoneController,
+                icon: Icons.phone_outlined,
+                label: 'Téléphone',
+                placeholder: 'Ex: 0700000000',
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Le numéro de téléphone est requis'
+                    : null,
+              ),
+
+              _buildFormField(
+                color: Colors.amber,
+                controller: _emailController,
+                icon: Icons.email_outlined,
+                label: 'Email',
+                placeholder: 'Ex: exemple@mail.com',
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'L’email est requis';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Entrez un email valide';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+              const Text(
+                'Informations sur le logement',
+                style:
+                TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+
+              _buildFormField(
+                color: Colors.teal,
+                controller: _adresseController,
+                icon: Icons.location_on_outlined,
+                label: 'Adresse du logement',
+                placeholder: 'Ex: Yopougon, Niangon...',
+                validator: (value) => value == null || value.isEmpty
+                    ? 'L’adresse est requise'
+                    : null,
+              ),
+
+              _buildFormField(
+                color: Colors.purple,
+                controller: _montantController,
+                icon: Icons.attach_money_outlined,
+                label: 'Montant du loyer (F CFA)',
+                placeholder: 'Ex: 100000',
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Le montant est requis'
+                    : null,
+              ),
+
+              _buildFormField(
+                color: Colors.orange,
+                controller: _dateEcheanceController,
+                icon: Icons.calendar_today_outlined,
+                label: 'Date d’échéance du loyer (1–28)',
+                placeholder: 'Ex: 5',
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(2),
+                ],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'La date d’échéance est requise';
+                  }
+                  final day = int.tryParse(value);
+                  if (day == null || day < 1 || day > 28) {
+                    return 'La date doit être comprise entre 1 et 28';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 30),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: _isLoading ? null : _saveLocataire,
+                  icon: const Icon(Icons.save_outlined, color: Colors.white),
+                  label: Text(
+                    _isEditing ? 'Enregistrer les modifications' : 'Ajouter le locataire',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormField({
+    required Color color,
+    required TextEditingController controller,
+    required IconData icon,
+    required String label,
+    required String placeholder,
+    String? Function(String?)? validator,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextFormField(
+        controller: controller,
+        validator: validator,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: placeholder,
+          prefixIcon: Icon(icon, color: color),
+          filled: true,
+          fillColor: color.withOpacity(0.05),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
   }
 }

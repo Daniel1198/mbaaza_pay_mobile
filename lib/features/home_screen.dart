@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mbaaza_pay/data/services/auth_service.dart';
 import 'package:mbaaza_pay/features/activites_recentes_screen.dart';
 import 'package:mbaaza_pay/features/historique_screen.dart';
 import 'package:mbaaza_pay/features/locataires_screen.dart';
 import 'package:mbaaza_pay/features/parametres_screen.dart';
 import 'package:mbaaza_pay/features/quittance_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/constants/colors.dart';
 
@@ -15,7 +17,28 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+final Auth _authService = Auth();
+String? _userName;
+String? _userCode;
+bool _loading = true;
+
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    loadUserName();
+  }
+
+  Future<void> loadUserName() async {
+    final user = await _authService.getUserFromToken();
+    debugPrint(user.toString());
+    setState(() {
+      _loading = false;
+      _userName = user?['bailleur']['nomComplet'];
+      _userCode = user?['bailleur']['code'];
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -42,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Stack(
             children: [
               Positioned(
-                top: cardMiddlePosition -100,
+                top: cardMiddlePosition - 100,
                 bottom: 0,
                 left: 0,
                 right: 0,
@@ -176,7 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           Column(
                             children: [
                               IconButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  _sendWhatsApp(context);
+                                },
                                 icon: Icon(
                                   Icons.headset_mic_rounded,
                                   color: AppColors.primary,
@@ -305,36 +330,41 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           IconButton(
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (context) => ActivitesRecentesScreen())
-                                );
-                              },
-                              icon: Icon(Icons.arrow_right_alt),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ActivitesRecentesScreen(),
+                                ),
+                              );
+                            },
+                            icon: Icon(Icons.arrow_right_alt),
                             style: IconButton.styleFrom(
                               backgroundColor: Colors.grey.shade100,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)
-                              )
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
-                          )
+                          ),
                         ],
                       ),
                       SizedBox(height: 10),
                       ListView.separated(
                         shrinkWrap: true,
-                          itemCount: 6,
-                          physics: NeverScrollableScrollPhysics(),
-                          separatorBuilder: (context, i) => Divider(height: 24, color: Colors.grey.shade100,),
-                          itemBuilder: (context, index) {
-                            return _buildActivityItem(
-                              'Paiement reçu',
-                              'Marie Dupont',
-                              '125 000 XOF',
-                              Icons.check_circle,
-                              AppColors.primary,
-                            );
-                          })
+                        itemCount: 6,
+                        physics: NeverScrollableScrollPhysics(),
+                        separatorBuilder: (context, i) =>
+                            Divider(height: 24, color: Colors.grey.shade100),
+                        itemBuilder: (context, index) {
+                          return _buildActivityItem(
+                            'Paiement reçu',
+                            'Marie Dupont',
+                            '125 000 XOF',
+                            Icons.check_circle,
+                            AppColors.primary,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -348,7 +378,12 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 Widget _buildActivityItem(
-    String title, String subtitle, String trailing, IconData icon, Color color) {
+  String title,
+  String subtitle,
+  String trailing,
+  IconData icon,
+  Color color,
+) {
   return Row(
     children: [
       Text(
@@ -375,10 +410,7 @@ Widget _buildActivityItem(
             const SizedBox(height: 2),
             Text(
               "de : $subtitle",
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ),
           ],
         ),
@@ -394,7 +426,6 @@ Widget _buildActivityItem(
     ],
   );
 }
-
 
 Widget _buildHeader(BuildContext context) {
   return Row(
@@ -416,7 +447,7 @@ Widget _buildHeader(BuildContext context) {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'John Doe',
+                _loading ? 'Chargement...' : 'Bienvenue $_userName 👋',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -424,7 +455,7 @@ Widget _buildHeader(BuildContext context) {
                 ),
               ),
               Badge(
-                label: Text('En retard'),
+                label: Text('$_userCode'),
                 backgroundColor: AppColors.secondary,
               ),
             ],
@@ -433,9 +464,9 @@ Widget _buildHeader(BuildContext context) {
       ),
       IconButton(
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (builder) => ParametresScreen())
-          );
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (builder) => ParametresScreen()));
         },
         icon: Icon(
           Icons.settings_outlined,
@@ -652,4 +683,22 @@ Widget _buildBalanceCard() {
       ),
     ),
   );
+}
+
+void _sendWhatsApp(context) async {
+  const telephone = "22579706401";
+
+  final url = Uri.parse(
+    "https://wa.me/$telephone",
+  );
+
+  if (await launchUrl(url, mode: LaunchMode.externalApplication)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Ouverture de WhatsApp.")),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("WhatsApp n'est pas installé.")),
+    );
+  }
 }

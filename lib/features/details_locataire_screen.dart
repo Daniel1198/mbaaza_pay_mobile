@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mbaaza_pay/data/models/locataire.dart';
+import 'package:mbaaza_pay/data/services/locataire_service.dart';
 import 'package:mbaaza_pay/features/edition_locataire_screen.dart';
 import 'package:mbaaza_pay/features/historique_screen.dart';
 import 'package:mbaaza_pay/features/quittance_screen.dart';
@@ -8,7 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/constants/colors.dart';
 
 class DetailsLocataireScreen extends StatefulWidget {
-  final Map<String, String> locataire;
+  final Locataire locataire;
 
   const DetailsLocataireScreen({
     super.key,
@@ -26,7 +28,7 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
   @override
   void initState() {
     super.initState();
-    _isBlocked = widget.locataire['isBlocked'] == 'true';
+    _isBlocked = widget.locataire.archivedAt == 'true';
   }
 
   @override
@@ -95,7 +97,7 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
       children: [
         // Nom du locataire
         Text(
-          widget.locataire['nom'] ?? 'Nom inconnu',
+          widget.locataire.nomComplet ?? 'Nom inconnu',
           style: GoogleFonts.figtree(
             fontSize: 32,
             color: AppColors.blackSoft,
@@ -117,7 +119,7 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              widget.locataire['telephone'] ?? 'Non renseigné',
+              widget.locataire.telephone ?? 'Non renseigné',
               style: TextStyle(
                 fontSize: 16,
                 color: AppColors.blackSoft,
@@ -180,10 +182,10 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
       icon: Icons.email_outlined,
       iconColor: AppColors.secondary,
       title: 'E-mail',
-      subtitle: widget.locataire['email']?.isNotEmpty == true
-          ? widget.locataire['email']!
+      subtitle: widget.locataire.email?.isNotEmpty == true
+          ? widget.locataire.email!
           : 'nom@domain',
-      isPlaceholder: widget.locataire['email']?.isEmpty != false,
+      isPlaceholder: widget.locataire.email?.isEmpty != false,
     );
   }
 
@@ -192,12 +194,12 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
       icon: Icons.location_on_outlined,
       iconColor: AppColors.secondary,
       title: 'Adresse exacte du logement',
-      subtitle: widget.locataire['adresse'] ?? 'Yopougon, Cité verte',
+      subtitle: widget.locataire.adresseLogement ?? 'Inconnue',
     );
   }
 
   Widget _buildRentInfo() {
-    final montant = widget.locataire['montant'] ?? '25 000';
+    final montant = widget.locataire.montantLoyer ?? 'Inconnu';
     return _buildInfoCard(
       icon: Icons.monetization_on_outlined,
       iconColor: AppColors.secondary,
@@ -302,10 +304,13 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
         children: [
           Expanded(
             child: _buildBottomActionButton(
-              icon: _isBlocked ? Icons.unarchive : Icons.archive,
-              label: _isBlocked ? 'Désarchiver' : 'Archiver',
+              icon: widget.locataire.archivedAt != null ? Icons.unarchive : Icons.archive,
+              label: widget.locataire.archivedAt != null ? 'Désarchiver' : 'Archiver',
               color: AppColors.blackSoft,
-              onTap: _toggleBlockStatus,
+              onTap: () {
+                debugPrint("idengtifiant : ${widget.locataire.id}");
+                _toggleBlockStatus(widget.locataire.id);
+              },
             ),
           ),
 
@@ -374,7 +379,7 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
 
   // Actions methods
   void _makePhoneCall() async {
-    final telephone = widget.locataire['telephone'];
+    final telephone = widget.locataire.telephone;
     if (telephone != null && telephone.isNotEmpty) {
       final uri = Uri.parse('tel:$telephone');
       if (await canLaunchUrl(uri)) {
@@ -386,7 +391,7 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
   }
 
   void _sendSMS() async {
-    final telephone = widget.locataire['telephone'];
+    final telephone = widget.locataire.telephone;
     if (telephone != null && telephone.isNotEmpty) {
       final uri = Uri.parse('sms:$telephone');
       if (await canLaunchUrl(uri)) {
@@ -396,24 +401,16 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
       }
     }
   }
-
-  Future<void> _toggleBlockStatus() async {
+  final _locataireService = LocataireService();
+  Future<void> _toggleBlockStatus(int id) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Simuler une requête réseau
-      await Future.delayed(const Duration(seconds: 1));
-
-      setState(() {
-        _isBlocked = !_isBlocked;
-      });
-
+      await _locataireService.archiveToggle(id);
       _showSuccessSnackBar(
-          _isBlocked
-              ? 'Locataire bloqué avec succès'
-              : 'Locataire débloqué avec succès'
+          'Statut du locataire modifié'
       );
     } catch (e) {
       _showErrorSnackBar('Erreur lors de l\'opération');
@@ -426,7 +423,7 @@ class _DetailsLocataireScreenState extends State<DetailsLocataireScreen> {
 
   void _editLocataire() {
     // Navigation vers la page d'édition
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditionLocataireScreen()));
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditionLocataireScreen(locataire: widget.locataire)));
   }
 
   void _showSuccessSnackBar(String message) {

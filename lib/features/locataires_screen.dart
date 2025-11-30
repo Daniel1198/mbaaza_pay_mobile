@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mbaaza_pay/core/constants/colors.dart';
+import 'package:mbaaza_pay/data/models/locataire.dart';
 import 'package:mbaaza_pay/features/details_locataire_screen.dart';
 import 'package:mbaaza_pay/features/edition_locataire_screen.dart';
+import '../data/services/locataire_service.dart';
 
 class LocatairesScreen extends StatefulWidget {
   const LocatairesScreen({super.key});
@@ -13,65 +15,39 @@ class LocatairesScreen extends StatefulWidget {
 
 class _LocatairesScreenState extends State<LocatairesScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final LocataireService _locataireService = LocataireService();
   String _searchQuery = '';
-
-  // Liste des locataires (vous pouvez remplacer par vos données)
-  final List<Map<String, String>> _allLocataires = [
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Aly Stéphane', 'section': 'A'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
-    {'name': 'Cly Stéphane', 'section': 'C'},
-  ];
-
-  List<Map<String, String>> get _filteredLocataires {
-    if (_searchQuery.isEmpty) {
-      return _allLocataires;
-    }
-    return _allLocataires
-        .where(
-          (locataire) => locataire['name']!.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ),
-        )
-        .toList();
-  }
-
-  Map<String, List<Map<String, String>>> get _groupedLocataires {
-    final Map<String, List<Map<String, String>>> grouped = {};
-
-    for (final locataire in _filteredLocataires) {
-      final section = locataire['section']!;
-      if (!grouped.containsKey(section)) {
-        grouped[section] = [];
-      }
-      grouped[section]!.add(locataire);
-    }
-
-    // Trier les sections alphabétiquement
-    final sortedKeys = grouped.keys.toList()..sort();
-    final sortedGrouped = <String, List<Map<String, String>>>{};
-    for (final key in sortedKeys) {
-      sortedGrouped[key] = grouped[key]!;
-    }
-
-    return sortedGrouped;
-  }
+  List<Locataire> _allLocataires = [];
+  bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
+    _loadLocataires();
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
       });
     });
+  }
+
+  Future _loadLocataires() async {
+    try {
+      final List<Locataire> data = await _locataireService.getLocataires();
+        setState(() {
+          _allLocataires = data;
+          _loading = false;
+          _error = null;
+        });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -80,11 +56,50 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
     super.dispose();
   }
 
+  List<Locataire> get _filteredLocataires {
+    if (_searchQuery.isEmpty) {
+      return _allLocataires;
+    }
+
+    final query = _searchQuery.toLowerCase().trim();
+    return _allLocataires.where((locataire) {
+      final nom = locataire.nomComplet.toLowerCase();
+      return nom.contains(query);
+    }).toList();
+  }
+
+  Map<String, List<Locataire>> get _groupedLocataires {
+    final Map<String, List<Locataire>> grouped = {};
+
+    for (final locataire in _filteredLocataires) {
+      final nom = locataire.nomComplet;
+      final section = nom.isNotEmpty ? nom[0].toUpperCase() : '#';
+
+      grouped.putIfAbsent(section, () => []);
+      grouped[section]!.add(locataire);
+    }
+
+    // Tri des sections et des locataires
+    final sortedKeys = grouped.keys.toList()..sort();
+    final sortedGrouped = <String, List<Locataire>>{};
+
+    for (final key in sortedKeys) {
+      sortedGrouped[key] = grouped[key]!
+        ..sort((a, b) => (a.nomComplet).compareTo(b.nomComplet));
+    }
+
+    return sortedGrouped;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Column(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? _buildErrorState()
+          : Column(
         children: [
           _buildSearchBar(),
           Expanded(child: _buildLocatairesList()),
@@ -103,11 +118,6 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
           color: Colors.white,
           size: 20,
         ),
-        style: IconButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: const Text(
@@ -119,48 +129,52 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
         ),
       ),
       centerTitle: true,
-      actionsPadding: EdgeInsets.only(right: 10),
       actions: [
         IconButton(
-          icon: const Icon(Icons.add, color: AppColors.white, size: 20),
-          style: IconButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => EditionLocataireScreen()),
+          icon: const Icon(Icons.add, color: AppColors.white, size: 28),
+          onPressed: () async {
+            final result = await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const EditionLocataireScreen(),
+              ),
             );
+
+            // Recharger la liste si un locataire a été ajouté
+            if (result == true) {
+              _loadLocataires();
+            }
           },
         ),
+        const SizedBox(width: 8),
       ],
     );
   }
 
   Widget _buildSearchBar() {
-    return Card(
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 5),
-        decoration: BoxDecoration(
-          color: Colors.white,
-        ),
-        child: TextField(
-          controller: _searchController,
-          decoration: const InputDecoration(
-            hintText: 'Recherche',
-            hintStyle: TextStyle(
-              color: Color(0xFF9CA3AF),
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-            ),
-            prefixIcon: Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(vertical: 16),
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Rechercher un locataire',
+          hintStyle: TextStyle(color: Colors.grey.shade400),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF), size: 22),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+            icon: const Icon(Icons.clear, size: 20),
+            onPressed: () {
+              _searchController.clear();
+            },
+          )
+              : null,
+          filled: true,
+          fillColor: Colors.grey.shade50,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
-          style: const TextStyle(fontSize: 16, color: Color(0xFF1A1A1A)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );
@@ -174,6 +188,7 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
     }
 
     return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 16),
       itemCount: groupedLocataires.length,
       itemBuilder: (context, sectionIndex) {
         final section = groupedLocataires.keys.elementAt(sectionIndex);
@@ -182,31 +197,30 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Section Header
-            Padding(
-              padding: EdgeInsets.only(
-                left: 33,
-                bottom: 12,
-                top: 10,
-              ),
+            Container(
+              padding: const EdgeInsets.only(left: 20, top: 16, bottom: 8),
+              color: Colors.grey.shade50,
+              width: double.infinity,
               child: Text(
                 section,
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.greyDark,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
                   letterSpacing: 0.5,
                 ),
               ),
             ),
-
-            // Locataires dans cette section
             ListView.separated(
               shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: locataires.length,
-                itemBuilder: (context, index) => _buildLocataireItem(locataires[index]),
-                separatorBuilder: (context, index) => Divider(height: 0, color: Colors.grey.shade100,),
+              separatorBuilder: (context, index) => Divider(
+                height: 1,
+                color: Colors.grey.shade200,
+                indent: 72,
+              ),
+              itemBuilder: (context, index) => _buildLocataireItem(locataires[index]),
             ),
           ],
         );
@@ -214,72 +228,146 @@ class _LocatairesScreenState extends State<LocatairesScreen> {
     );
   }
 
-  Widget _buildLocataireItem(Map<String, String> locataire) {
+  Widget _buildLocataireItem(Locataire locataire) {
+    final name = locataire.nomComplet;
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-      onTap: () {
-        Navigator.of(context).push(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      onTap: () async {
+        final result = await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => DetailsLocataireScreen(locataire: locataire),
           ),
         );
+
+        // Recharger si des modifications ont été faites
+        if (result == true) {
+          _loadLocataires();
+        }
       },
       tileColor: Colors.white,
+      leading: CircleAvatar(
+        backgroundColor: AppColors.primary,
+        radius: 24,
+        child: Text(
+          initial,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
       title: Text(
-        locataire['name']!,
+        name,
         style: GoogleFonts.figtree(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF1A1A1A),
+          color: const Color(0xFF1A1A1A),
         ),
       ),
-      leading: CircleAvatar(
-        backgroundColor: AppColors.primary,
-        child: Text(
-          locataire['name']!.substring(0, 1),
-          style: TextStyle(color: Colors.white),
-        ),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: Colors.grey.shade400,
+        size: 24,
       ),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(40),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _searchQuery.isEmpty ? Icons.people_outline : Icons.search_off,
+              color: Colors.grey.shade300,
+              size: 80,
             ),
-            child: const Icon(
-              Icons.search_off,
-              color: Color(0xFF9CA3AF),
-              size: 40,
+            const SizedBox(height: 24),
+            Text(
+              _searchQuery.isEmpty
+                  ? 'Aucun locataire'
+                  : 'Aucun résultat trouvé',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A1A),
+              ),
             ),
-          ),
-
-          const SizedBox(height: 24),
-
-          const Text(
-            'Aucun locataire trouvé',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF374151),
+            const SizedBox(height: 8),
+            Text(
+              _searchQuery.isEmpty
+                  ? 'Ajoutez votre premier locataire'
+                  : 'Essayez une autre recherche',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
+            if (_searchQuery.isEmpty) ...[
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const EditionLocataireScreen(),
+                    ),
+                  );
+                  if (result == true) {
+                    _loadLocataires();
+                  }
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Ajouter un locataire'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
-          const SizedBox(height: 8),
-
-          const Text(
-            'Essayez de modifier votre recherche',
-            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
-          ),
-        ],
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: Colors.red.shade300, size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'Erreur de chargement',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? 'Une erreur est survenue',
+              style: TextStyle(color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadLocataires,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Réessayer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
